@@ -27,7 +27,7 @@ class Data():
         if self.computeSamples:
             # We retrieve the id of the users having at least 2 fingerprints
             self.cur.execute(
-                'SELECT id , count(*) AS nbFps FROM fpData where id != "Not supported" AND counter < '+str(max_counter)+' AND counter > '+str(min_counter)+' GROUP BY id HAVING count(id) >= '+str(min_number_fp))
+                'SELECT id , count(*) AS nbFps FROM fpData where id != "" and id != "Not supported" AND counter < '+str(max_counter)+' AND counter > '+str(min_counter)+' GROUP BY id HAVING count(id) >= '+str(min_number_fp))
             multId = self.cur.fetchall()
             total = list()
 
@@ -46,7 +46,7 @@ class Data():
             train, test = train_test_split(total, train_size=0.95)
             # we get users with only 1 fingerprint
             self.cur.execute(
-                'SELECT counter, id , count(*) AS nbFps FROM fpData where id != "Not supported" AND counter < 40000 AND counter > '+str(min_counter)+' GROUP BY id, counter HAVING count(id) = 1')
+                'SELECT counter, id , count(*) AS nbFps FROM fpData where id != "" and id != "Not supported" AND counter < '+str(max_counter)+' AND counter > '+str(min_counter)+' GROUP BY id, counter HAVING count(id) = 1')
             singleFps = set()
             singId = self.cur.fetchall()
             cpt = 0

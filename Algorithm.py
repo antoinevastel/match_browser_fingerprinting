@@ -14,15 +14,21 @@ import pickle
 
 
 class Algorithm():
-    def __init__(self, trainSet, testSet, attributes):
-        self.trainSet = trainSet
-        self.testSet = testSet
+    def __init__(self, attributes):
+        self.trainSet = None
+        self.testSet = None
         self.dicResTrain = dict()
         self.predictions = dict()
         self.attributes = attributes
         self.model = None
         self.isTrained = False
 
+
+    def setTrainSet(self, trainSet):
+        self.trainSet = trainSet
+
+    def setTestSet(self, testSet):
+        self.testSet = testSet
 
     def generateHeader(self):
         header = []
@@ -192,7 +198,7 @@ class Algorithm():
         return ",".join(similarity_vector)
 
 
-    def computeRegressionInput(self):
+    def computeRegressionInput(self, thresh_min, thresh_max):
         print("Start computeRegressionInput")
         # result is the string describing the results from all the points we are going to test
         # to compare two fingerprints
@@ -219,7 +225,7 @@ class Algorithm():
             if i % 500 == 0:
                 print(i)
             # compareWith = random.randint(250, 350)
-            compareWith = random.randint(200, 300)
+            compareWith = random.randint(thresh_min, thresh_max)
             fpFixed = self.trainSet[i]
             for j in range(i + 1, len(self.trainSet)):
                 fpCompared = self.trainSet[j]
@@ -328,11 +334,11 @@ class Algorithm():
         #4,2 -> 78.7
         #5,2 -> 78.8
         #15,2 -> 75.7
-        self.model = MLPClassifier(activation=activation, solver=solver, alpha=1e-3, hidden_layer_sizes=hidden_layer_sizes, random_state=1)
+        self.model = MLPClassifier(activation=activation, solver=solver, alpha=1e-3, hidden_layer_sizes=hidden_layer_sizes, random_state=1, warm_start= True)
         self.model.fit(train_X, y)
         self.isTrained = True
 
-    def predictNN(self):
+    def predictNN(self, threshold):
         if not self.isTrained:
             raise ValueError("Model is not trained")
 
@@ -355,7 +361,7 @@ class Algorithm():
             predicted = self.model.predict_proba(Xp.as_matrix())
 
             nearest = (-predicted[:, 0]).argsort()[:30]
-            if predicted[nearest[0], 0] > 0.90:
+            if predicted[nearest[0], 0] > threshold:
                 self.predictions[fpTest.getCounter()] = self.trainSet[nearest[0]].getId()
             else:
                 self.predictions[fpTest.getCounter()] = None
@@ -371,7 +377,7 @@ class Algorithm():
         for counter in self.predictions:
             f.write(str(counter) + "," + str(self.predictions[counter]) + "\n")
 
-    def evalPrecision(self):
+    def evalPrecision(self, model_name, s_parameters):
         idsTrain = set()
         for fp in self.trainSet:
             idsTrain.add(fp.getId())
@@ -393,6 +399,9 @@ class Algorithm():
                 noneError += 1.0
             elif self.predictions[fpTest.getCounter()] != fpTest.getId():
                 badIdError += 1.0
+
+        with open("res.txt", "a") as file:
+            file.write(model_name+","+s_parameters+","+str(noneError / float(len(self.testSet)))+","+str(badIdError / float(len(self.testSet)))+","+str(precision / float(len(self.testSet)))+"\n")
 
         print("noneError : " + str(noneError / float(len(self.testSet))))
         print("badIdError : " + str(badIdError / float(len(self.testSet))))
